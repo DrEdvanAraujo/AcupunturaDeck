@@ -1,6 +1,42 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Você pode adicionar um título genérico aqui ou remover a tag title se este for apenas um fragmento para seu site -->
+    <title>Botão Aplicação Acupuntura</title>
+    <!-- Adicione links CSS externos se o seu site principal os utiliza (ex: Bootstrap),
+         mas os estilos específicos do botão estão incluídos abaixo -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+
+        /* Estilos para o botão específico da aplicação de Acupuntura */
+        #launchAcupunctureButton {
+            /* Usando classes Bootstrap + personalização se necessário */
+            /* padding: 20px 40px; */ /* Exemplo de padding customizado */
+            /* font-size: 1.5em; */  /* Exemplo de tamanho customizado */
+            margin: 20px auto; /* Adiciona margem acima/abaixo e centraliza horizontalmente se body tiver text-align: center */
+            display: block; /* Ajuda na centralização com margin auto */
+            width: fit-content; /* Ajusta a largura ao conteúdo */
+			background-color: #2a9d8f !important; /* Sua cor amarela/dourada. Use !important para garantir que sobrescreva o Bootstrap */
+            border-color: #2a9d8f !important;     /* Mesma cor para a borda */
+            color: ##2a9d8f; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- O Botão HTML -->
+    <button id="launchAcupunctureButton" class="btn btn-warning btn-lg">
+        Abrir Baralho Interativo de Acupuntura
+    </button>
+
+    <script>
+        // --- Conteúdo HTML/CSS/JS da Aplicação de Acupuntura (string longa) ---
+        const acupunctureAppHTML = `
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Baralho Interativo de Acupuntura</title>
@@ -115,8 +151,6 @@
         .memory-front { background: url('https://i.postimg.cc/W1DSkD2n/Chat-GPT-Image-10-04-2025-20-46-36.png') center center / cover no-repeat; background-color: #eee; }
         .memory-back { transform: rotateY(180deg); background: #ffffff; padding: 3px; box-sizing: border-box; }
         .memory-back img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
-        /* Remove the specific .matched styles as cards will disappear */
-        /* .memory-card.matched { transform: rotateY(180deg) scale(0.95); opacity: 0.6; cursor: default; box-shadow: 0 0 8px 2px #4CAF50; } */
 
     </style>
 </head>
@@ -289,14 +323,14 @@
                 }
             });
             const faceFront = document.createElement('div'); faceFront.className = 'face front';
-            const imgFront = document.createElement('img'); imgFront.src = cardData.frontImage; imgFront.alt = `Frente: ${cardData.name}`; imgFront.onerror = () => { imgFront.src = PLACEHOLDER_IMAGE_URL; imgFront.alt = 'Erro ao carregar imagem frontal'; };
+            const imgFront = document.createElement('img'); imgFront.src = cardData.frontImage; imgFront.alt = \`Frente: \${cardData.name}\`; imgFront.onerror = () => { imgFront.src = PLACEHOLDER_IMAGE_URL; imgFront.alt = 'Erro ao carregar imagem frontal'; };
             const nameFront = document.createElement('div'); nameFront.className = 'card-name'; nameFront.textContent = cardData.name;
             const zoomIcon = document.createElement('span'); zoomIcon.className = 'zoom-icon'; zoomIcon.textContent = '🔍'; zoomIcon.title = 'Ampliar/Reduzir';
             zoomIcon.addEventListener('click', (event) => { event.stopPropagation(); toggleZoom(scene); });
             faceFront.appendChild(imgFront); faceFront.appendChild(nameFront); faceFront.appendChild(zoomIcon);
 
             const faceBack = document.createElement('div'); faceBack.className = 'face back';
-            const imgBack = document.createElement('img'); imgBack.src = cardData.backImage; imgBack.alt = `Verso: ${cardData.name}`; imgBack.onerror = () => { imgBack.src = PLACEHOLDER_IMAGE_URL; imgBack.alt = 'Erro ao carregar imagem do verso'; };
+            const imgBack = document.createElement('img'); imgBack.src = cardData.backImage; imgBack.alt = \`Verso: \${cardData.name}\`; imgBack.onerror = () => { imgBack.src = PLACEHOLDER_IMAGE_URL; imgBack.alt = 'Erro ao carregar imagem do verso'; };
             faceBack.appendChild(imgBack);
 
             card.appendChild(faceFront); card.appendChild(faceBack);
@@ -318,7 +352,7 @@
                     const cardElement = createCardElement(cardData);
                     cardDisplayArea.appendChild(cardElement);
                 } else {
-                    console.warn(`Dados da carta não encontrados para ID: ${id}`);
+                    console.warn(\`Dados da carta não encontrados para ID: \${id}\`);
                 }
             });
         }
@@ -377,7 +411,7 @@
         function generateQuizQuestions() { /* ... (unchanged) ... */
             let generatedQuestions = []; const shuffledCards = shuffleArray([...cardsData]); const allCardNames = cardsData.map(card => card.name); const conditionNames = Object.keys(clinicalConditions);
             let imageQCount = 0; for (let i = 0; i < shuffledCards.length && imageQCount < QUESTIONS_PER_TYPE; i++) { const correctCard = shuffledCards[i]; const correctAnswerName = correctCard.name; const incorrectNames = allCardNames.filter(name => name !== correctAnswerName); shuffleArray(incorrectNames); const optionsAsStrings = [correctAnswerName, ...incorrectNames.slice(0, 3)]; if (optionsAsStrings.length < 4) continue; generatedQuestions.push({ question: "Qual o nome deste ponto?", image: correctCard.frontImage, options: shuffleArray(optionsAsStrings), correctAnswer: correctAnswerName }); imageQCount++; }
-            let conditionQCount = 0; const shuffledConditions = shuffleArray([...conditionNames]); for (let i = 0; i < shuffledConditions.length && conditionQCount < QUESTIONS_PER_TYPE; i++) { const conditionName = shuffledConditions[i]; const possibleCorrectPointIds = clinicalConditions[conditionName]; if (!possibleCorrectPointIds || possibleCorrectPointIds.length === 0) continue; const correctPointId = possibleCorrectPointIds[Math.floor(Math.random() * possibleCorrectPointIds.length)]; const correctPointData = cardsData.find(card => card.id === correctPointId); if (!correctPointData) continue; const correctAnswerName = correctPointData.name; const correctOption = { name: correctAnswerName, image: correctPointData.frontImage }; const conditionPointNames = possibleCorrectPointIds.map(id => cardsData.find(card => card.id === id)?.name).filter(name => name); const incorrectNames = allCardNames.filter(name => !conditionPointNames.includes(name)); shuffleArray(incorrectNames); const incorrectOptions = incorrectNames.slice(0, 3).map(name => ({ name: name, image: cardImageMap.get(name) || PLACEHOLDER_IMAGE_URL })); if (incorrectOptions.length < 3) continue; const optionsAsObjects = shuffleArray([correctOption, ...incorrectOptions]); generatedQuestions.push({ question: `Qual destes pontos é indicado para ${conditionName}?`, image: null, options: optionsAsObjects, correctAnswer: correctAnswerName }); conditionQCount++; }
+            let conditionQCount = 0; const shuffledConditions = shuffleArray([...conditionNames]); for (let i = 0; i < shuffledConditions.length && conditionQCount < QUESTIONS_PER_TYPE; i++) { const conditionName = shuffledConditions[i]; const possibleCorrectPointIds = clinicalConditions[conditionName]; if (!possibleCorrectPointIds || possibleCorrectPointIds.length === 0) continue; const correctPointId = possibleCorrectPointIds[Math.floor(Math.random() * possibleCorrectPointIds.length)]; const correctPointData = cardsData.find(card => card.id === correctPointId); if (!correctPointData) continue; const correctAnswerName = correctPointData.name; const correctOption = { name: correctAnswerName, image: correctPointData.frontImage }; const conditionPointNames = possibleCorrectPointIds.map(id => cardsData.find(card => card.id === id)?.name).filter(name => name); const incorrectNames = allCardNames.filter(name => !conditionPointNames.includes(name)); shuffleArray(incorrectNames); const incorrectOptions = incorrectNames.slice(0, 3).map(name => ({ name: name, image: cardImageMap.get(name) || PLACEHOLDER_IMAGE_URL })); if (incorrectOptions.length < 3) continue; const optionsAsObjects = shuffleArray([correctOption, ...incorrectOptions]); generatedQuestions.push({ question: \`Qual destes pontos é indicado para \${conditionName}?\`, image: null, options: optionsAsObjects, correctAnswer: correctAnswerName }); conditionQCount++; }
             while (generatedQuestions.length > 0 && generatedQuestions.length < TOTAL_QUIZ_QUESTIONS) { generatedQuestions.push({...generatedQuestions[Math.floor(Math.random() * generatedQuestions.length)]}); }
             quizQuestions = shuffleArray(generatedQuestions.slice(0, TOTAL_QUIZ_QUESTIONS));
         }
@@ -401,10 +435,10 @@
             quizFeedbackEl.textContent = ''; quizFeedbackEl.className = 'quiz-feedback'; confirmAnswerBtn.disabled = true; nextQuestionBtn.style.display = 'none'; confirmAnswerBtn.style.display = 'inline-block'; updateScoreDisplay(); selectedAnswer = null;
         }
         function handleOptionSelect(button, optionName) { /* ... (unchanged) ... */ if (!quizActive) return; const allOptions = quizOptionsEl.querySelectorAll('.quiz-option-btn'); allOptions.forEach(btn => btn.classList.remove('selected')); button.classList.add('selected'); selectedAnswer = optionName; confirmAnswerBtn.disabled = false; }
-        function checkAnswer() { /* ... (unchanged) ... */ if (!quizActive || selectedAnswer === null) return; const currentQ = quizQuestions[currentQuestionIndex]; const isCorrect = selectedAnswer === currentQ.correctAnswer; quizFeedbackEl.textContent = isCorrect ? 'Correto!' : `Incorreto! A resposta era: ${currentQ.correctAnswer}`; quizFeedbackEl.classList.add(isCorrect ? 'correct' : 'incorrect'); if (isCorrect) { score++; } const allOptions = quizOptionsEl.querySelectorAll('.quiz-option-btn'); allOptions.forEach(btn => { btn.disabled = true; const btnOptionValue = btn.dataset.optionValue; if (btnOptionValue === currentQ.correctAnswer) { btn.classList.add('correct'); } else if (btn.classList.contains('selected')) { btn.classList.add('incorrect'); } }); updateScoreDisplay(); confirmAnswerBtn.style.display = 'none'; nextQuestionBtn.style.display = 'inline-block'; }
+        function checkAnswer() { /* ... (unchanged) ... */ if (!quizActive || selectedAnswer === null) return; const currentQ = quizQuestions[currentQuestionIndex]; const isCorrect = selectedAnswer === currentQ.correctAnswer; quizFeedbackEl.textContent = isCorrect ? 'Correto!' : \`Incorreto! A resposta era: \${currentQ.correctAnswer}\`; quizFeedbackEl.classList.add(isCorrect ? 'correct' : 'incorrect'); if (isCorrect) { score++; } const allOptions = quizOptionsEl.querySelectorAll('.quiz-option-btn'); allOptions.forEach(btn => { btn.disabled = true; const btnOptionValue = btn.dataset.optionValue; if (btnOptionValue === currentQ.correctAnswer) { btn.classList.add('correct'); } else if (btn.classList.contains('selected')) { btn.classList.add('incorrect'); } }); updateScoreDisplay(); confirmAnswerBtn.style.display = 'none'; nextQuestionBtn.style.display = 'inline-block'; }
         function nextQuestion() { /* ... (unchanged) ... */ if (!quizActive) return; currentQuestionIndex++; showQuestion(); }
-        function updateScoreDisplay() { /* ... (unchanged) ... */ if (!quizActive) return; quizScoreEl.textContent = `Pontuação: ${score} / ${quizQuestions.length || TOTAL_QUIZ_QUESTIONS}`; }
-        function showResults() { /* ... (unchanged) ... */ if (!quizActive) return; quizContentEl.style.display = 'none'; finalScoreEl.textContent = `${score} de ${quizQuestions.length}`; quizResultsEl.style.display = 'block'; }
+        function updateScoreDisplay() { /* ... (unchanged) ... */ if (!quizActive) return; quizScoreEl.textContent = \`Pontuação: \${score} / \${quizQuestions.length || TOTAL_QUIZ_QUESTIONS}\`; }
+        function showResults() { /* ... (unchanged) ... */ if (!quizActive) return; quizContentEl.style.display = 'none'; finalScoreEl.textContent = \`\${score} de \${quizQuestions.length}\`; quizResultsEl.style.display = 'block'; }
         function closeQuiz() { quizModal.classList.remove('visible'); document.body.classList.remove('quiz-active'); quizActive = false; }
 
         // --- Funções do Jogo da Memória ---
@@ -510,7 +544,7 @@
             faceBack.className = 'memory-face memory-back';
             const imgBack = document.createElement('img');
             imgBack.src = cardInfo.image;
-            imgBack.alt = `Carta ${cardInfo.id} (${cardInfo.type})`;
+            imgBack.alt = \`Carta \${cardInfo.id} (\${cardInfo.type})\`;
             imgBack.onerror = () => { imgBack.src = PLACEHOLDER_IMAGE_URL; imgBack.alt = 'Erro imagem'; };
             faceBack.appendChild(imgBack);
 
@@ -574,15 +608,11 @@
                 flippedMemoryCards = []; // Reset flipped cards immediately
                  // Don't unlock board yet, wait for timeout unless game is won
 
-
             } else {
                 // No match, unflip after a delay
                 setTimeout(unflipCards, 1000);
             }
         }
-
-        // Renamed from disableCards - now just handles the visual removal part
-        // Logic moved into checkForMatch
 
         function unflipCards() {
             flippedMemoryCards.forEach(card => {
@@ -610,13 +640,11 @@
              // Optionally flip all remaining cards or highlight pairs
          }
 
-
         function closeMemoryGame() {
             stopMemoryTimer(); // Make sure timer stops when closing
             memoryGameModal.classList.remove('visible');
             document.body.classList.remove('memory-game-active');
             isMemoryGameActive = false;
-            // Reset game state variables if desired (or keep them until next setup)
         }
 
         function toggleMaximizeMemoryGame() {
@@ -661,13 +689,12 @@
             const minutes = Math.floor(memoryTimeLeft / 60);
             const seconds = memoryTimeLeft % 60;
             // Pad seconds with a leading zero if less than 10
-            memoryTimerDisplayEl.textContent = `Tempo: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            memoryTimerDisplayEl.textContent = \`Tempo: \${minutes}:\${seconds < 10 ? '0' : ''}\${seconds}\`;
         }
 
         function updateMemoryStatus() {
-             memoryGameStatusEl.textContent = `Pares Encontrados: ${matchedPairs} / ${totalMemoryPairs}`;
+             memoryGameStatusEl.textContent = \`Pares Encontrados: \${matchedPairs} / \${totalMemoryPairs}\`;
         }
-
 
         // --- Inicialização e Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -698,6 +725,32 @@
              confirmMemorySetupBtn.addEventListener('click', initMemoryGameBoard); // Starts the actual game
              memoryGameModal.addEventListener('click', (event) => { if (event.target === memoryGameModal) closeMemoryGame(); });
              memoryGameContainer.addEventListener('click', (event) => { event.stopPropagation(); }); // Prevent closing by clicking inside
+        });
+    <\/script> {/* IMPORTANTE: Escapar a tag de fechamento */}
+
+</body>
+</html>
+        `; // Fim da string acupunctureAppHTML
+
+        // --- Lógica do Clique do Botão ---
+        document.getElementById('launchAcupunctureButton').addEventListener('click', () => {
+            // Definir características da nova janela
+            const windowFeatures = 'width=1200,height=800,resizable=yes,scrollbars=yes,status=yes';
+            // Abrir uma nova janela em branco
+            const newWindow = window.open('', '_blank', windowFeatures);
+
+            // Verificar se a janela foi aberta com sucesso (não bloqueada)
+            if (newWindow) {
+                newWindow.document.open();
+                // Escrever todo o conteúdo HTML/CSS/JS da aplicação na nova janela
+                newWindow.document.write(acupunctureAppHTML);
+                newWindow.document.close();
+                // Trazer a nova janela para frente
+                newWindow.focus();
+            } else {
+                // Informar o usuário se a janela foi bloqueada
+                alert('Não foi possível abrir a aplicação. Verifique se o seu bloqueador de pop-ups está desativado para este site.');
+            }
         });
     </script>
 
