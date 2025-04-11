@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baralho Interativo de Acupuntura</title>
+    <style>
+        /* Estilos Gerais e de Controles */
+        body { background: #dfece5; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body.zoomed, body.quiz-active, body.memory-game-active { overflow: hidden; } /* Prevent scroll during overlays */
+        .controls { background-color: #ffffff; padding: 15px 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 30px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: center; z-index: 10; position: relative; }
+        .controls label { font-weight: bold; color: #333; }
+        .controls select, .controls button { padding: 8px 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1em; cursor: pointer; background-color: #f8f8f8; transition: background-color 0.3s, box-shadow 0.3s; }
+        .controls select:hover, .controls button:hover { background-color: #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .controls button { background-color: #4CAF50; color: white; border-color: #388E3C; }
+        .controls button:hover { background-color: #388E3C; }
+        #resetBtn { background-color: #f44336; border-color: #d32f2f; }
+        #resetBtn:hover { background-color: #c62828; }
+        #startQuizBtn { background-color: #2196F3; border-color: #1976D2;}
+        #startQuizBtn:hover { background-color: #1976D2; }
+        #openMemoryGameBtn { background-color: #ff9800; border-color: #f57c00; } /* Renamed button */
+        #openMemoryGameBtn:hover { background-color: #e68900; }
+
+        /* Área de Cartas e Carta Individual (Standard View) */
+        #cardDisplayArea { display: flex; flex-wrap: wrap; justify-content: center; gap: 25px; padding: 20px; width: 100%; max-width: 1200px; perspective: 1500px; }
+        .scene { width: 220px; height: 300px; perspective: 800px; position: relative; }
+        .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-radius: 15px; box-shadow: 0 6px 12px rgba(0,0,0,0.15); cursor: pointer; }
+        .card.is-flipped { transform: rotateY(180deg); }
+        .face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #ffffff; }
+        .front { position: relative; padding: 10px; box-sizing: border-box; text-align: center; }
+        .back { transform: rotateY(180deg); padding: 0; background: #ffffff; }
+        .face > img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 15px; }
+        .card-name { font-weight: bold; color: #333; font-size: 0.9em; position: absolute; bottom: 10px; left: 0; right: 0; background-color: rgba(255, 255, 255, 0.8); padding: 5px 0; text-align: center; pointer-events: none; z-index: 2; }
+
+        /* Visão Inicial */
+        #initialView { display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: 20px; }
+        #coverCard { width: 220px; height: 300px; background: url('https://i.postimg.cc/W1DSkD2n/Chat-GPT-Image-10-04-2025-20-46-36.png') center center / cover no-repeat; border-radius: 15px; box-shadow: 0 6px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1) inset; position: relative; margin-bottom: 10px; border: 5px solid white; }
+        #coverCard::before, #coverCard::after { content: ''; position: absolute; width: 95%; height: 100%; background-color: #f0f0f0; border-radius: 15px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); border: 5px solid white; z-index: -1; }
+        #coverCard::before { transform: rotate(-3deg) translate(-2px, 2px); top: 0; left: 2.5%; }
+        #coverCard::after { transform: rotate(2deg) translate(1px, 4px); top: 0; left: 2.5%; z-index: -2; background-color: #e8e8e8; }
+        #initialView p { font-style: italic; color: #555; }
+
+        /* Lupa e Overlay de Zoom */
+        .zoom-icon { position: absolute; top: 10px; right: 10px; font-size: 1.5em; cursor: pointer; background-color: rgba(255, 255, 255, 0.7); border-radius: 50%; padding: 2px 5px; line-height: 1; z-index: 5; transition: transform 0.2s ease; }
+        .zoom-icon:hover { transform: scale(1.1); }
+        #zoomOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: none; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        #zoomOverlay.visible { display: flex; opacity: 1; }
+        #zoomOverlay .scene { width: 70vw; height: 85vh; max-width: 600px; max-height: 800px; transition: transform 0.3s ease-in-out; transform: scale(0.8); }
+        #zoomOverlay.visible .scene { transform: scale(1); }
+        #zoomOverlay .zoom-icon { font-size: 2em; top: 15px; right: 15px; }
+
+        /* --- Estilos do Modal do Quiz --- */
+        #quizModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 1100; opacity: 0; transition: opacity 0.4s ease-in-out; padding: 20px; box-sizing: border-box; }
+        #quizModal.visible { display: flex; opacity: 1; }
+        .quiz-container { background-color: #fff; padding: 25px 30px; border-radius: 15px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; text-align: center; }
+        #closeQuizBtn { position: absolute; top: 10px; right: 15px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; font-weight: bold; line-height: 28px; cursor: pointer; text-align: center; z-index: 1; }
+        #quizQuestion { font-size: 1.3em; margin-bottom: 15px; color: #333; font-weight: bold; min-height: 2.6em; }
+        #quizImageContainer { min-height: 10px; }
+        #quizImageContainer img { max-width: 80%; max-height: 250px; height: auto; margin-bottom: 20px; border-radius: 10px; border: 1px solid #eee; }
+        #quizOptions { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .quiz-option-btn { border: 1px solid #ccc; border-radius: 8px; background-color: #f0f0f0; cursor: pointer; transition: background-color 0.3s, border-color 0.3s; font-size: 0.95em; text-align: center; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .quiz-option-btn.has-image { min-height: 130px; justify-content: flex-start; }
+        .quiz-option-btn.has-image img { max-width: 90%; height: 80px; object-fit: contain; margin-bottom: 8px; border-radius: 5px; display: block; }
+        .quiz-option-btn.has-image span { display: block; font-weight: 500; line-height: 1.3; margin-top: auto; padding-top: 5px; }
+        .quiz-option-btn.no-image { min-height: auto; justify-content: center; padding: 15px; font-size: 1em; }
+         .quiz-option-btn.no-image span { display: inline; margin: 0; padding: 0; font-weight: 500; }
+         .quiz-option-btn img:not([src]), .quiz-option-btn img[src=""] { display: none; }
+        .quiz-option-btn:hover { background-color: #e0e0e0; border-color: #aaa; }
+        .quiz-option-btn.selected { background-color: #add8e6; border-color: #87ceeb; font-weight: bold; }
+        .quiz-option-btn.correct { background-color: #90ee90 !important; border-color: #32cd32 !important; color: #006400; }
+        .quiz-option-btn.incorrect { background-color: #ffcccb !important; border-color: #ff6347 !important; color: #a52a2a; }
+        #quizFeedback { margin-top: 15px; font-size: 1.1em; font-weight: bold; min-height: 1.5em; }
+        #quizFeedback.correct { color: green; }
+        #quizFeedback.incorrect { color: red; }
+        #quizActions button { padding: 10px 20px; border-radius: 8px; border: none; font-size: 1em; cursor: pointer; color: white; margin-top: 10px; min-width: 150px; }
+        #confirmAnswerBtn { background-color: #ffc107; color: #333; }
+        #confirmAnswerBtn:disabled { background-color: #aaa; cursor: not-allowed; }
+        #nextQuestionBtn { background-color: #17a2b8; display: none; }
+        #quizScore { margin-top: 15px; font-size: 1.1em; font-weight: bold; color: #555; }
+        #quizResults { margin-top: 20px; padding: 20px; background-color: #e9f5e9; border: 1px solid #c8e6c9; border-radius: 10px; }
+        #quizResults h3 { color: #2e7d32; margin-bottom: 10px; }
+        #quizResults p { font-size: 1.2em; font-weight: bold; }
+
+        /* --- Estilos do Modal do Jogo da Memória --- */
+        #memoryGameModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); display: none; align-items: center; justify-content: center; z-index: 1100; opacity: 0; transition: opacity 0.4s ease-in-out; padding: 20px; box-sizing: border-box; }
+        #memoryGameModal.visible { display: flex; opacity: 1; }
+        .memory-game-container { background-color: #fff; padding: 20px; border-radius: 15px; width: 90%; max-width: 1000px; /* Default max width */ max-height: 90vh; /* Default max height */ overflow: hidden; /* Hide internal scrollbars initially */ box-shadow: 0 10px 30px rgba(0,0,0,0.25); position: relative; display: flex; flex-direction: column; transition: width 0.3s ease, height 0.3s ease, max-width 0.3s ease, max-height 0.3s ease; }
+        .memory-game-container.maximized { width: 95vw; height: 95vh; max-width: none; max-height: none; } /* Maximized styles */
+        #closeMemoryGameBtn { position: absolute; top: 10px; right: 15px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; font-weight: bold; line-height: 28px; cursor: pointer; text-align: center; z-index: 3; }
+        #toggleMaximizeMemoryBtn { position: absolute; top: 10px; right: 55px; background: #ccc; color: #333; border: none; border-radius: 5px; width: 30px; height: 30px; font-size: 16px; font-weight: bold; line-height: 28px; cursor: pointer; text-align: center; z-index: 3; }
+        #memoryGameHeader { text-align: center; margin-bottom: 15px; padding-right: 80px; /* Space for buttons */ }
+        #memoryGameHeader h2 { margin: 0 0 10px 0; color: #ff9800; }
+        #memoryGameStatus { font-size: 1.1em; font-weight: bold; color: #555; }
+        #memoryGameSetup { text-align: center; padding: 30px 0; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        #memoryGameSetup label { font-size: 1.1em; font-weight: 500; }
+        #memoryPairsSelect { padding: 8px 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1em; min-width: 80px; }
+        #confirmMemorySetupBtn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; }
+        #memoryGameArea { flex-grow: 1; /* Takes remaining space */ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Adjust minmax for card size */ gap: 10px; padding: 10px; overflow-y: auto; /* Allow scrolling if needed */ }
+        .memory-game-container.maximized #memoryGameArea { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; } /* Slightly larger cards when maximized */
+
+        /* Card styles within the modal grid */
+        .memory-scene { width: 100%; /* Take grid cell width */ aspect-ratio: 2 / 3; /* Maintain approx card ratio */ perspective: 600px; position: relative; }
+        .memory-card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1); border-radius: 8px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; border: 2px solid white; }
+        .memory-card.is-flipped { transform: rotateY(180deg); }
+        .memory-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        .memory-front { background: url('https://i.postimg.cc/W1DSkD2n/Chat-GPT-Image-10-04-2025-20-46-36.png') center center / cover no-repeat; background-color: #eee; }
+        .memory-back { transform: rotateY(180deg); background: #ffffff; padding: 3px; box-sizing: border-box; }
+        .memory-back img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
+        .memory-card.matched { transform: rotateY(180deg) scale(0.95); opacity: 0.6; cursor: default; box-shadow: 0 0 8px 2px #4CAF50; }
+
+    </style>
+</head>
+<body>
+
+    <h1>Baralho Interativo de Acupuntura</h1>
+    <div class="controls">
+        <button id="randomCardBtn">Tirar Carta Aleatória</button>
+        <div><label for="conditionSelect">Ou escolha uma condição:</label><select id="conditionSelect"><option value="">-- Selecione --</option></select></div>
+        <button id="openMemoryGameBtn">Jogo da Memória</button> <!-- Opens the modal -->
+        <button id="startQuizBtn">Iniciar Quiz</button>
+        <button id="resetBtn">Resetar</button>
+    </div>
+
+    <div id="initialView"><div id="coverCard"></div><p>Selecione uma opção acima para começar.</p></div>
+    <div id="cardDisplayArea"></div> <!-- Standard card display -->
+    <div id="zoomOverlay"></div>
+
+    <!-- Modal do Quiz (Unchanged) -->
+    <div id="quizModal">
+        <div class="quiz-container">
+            <button id="closeQuizBtn">×</button>
+            <h2>Quiz de Acupuntura</h2>
+            <div id="quizScore">Pontuação: 0 / 0</div><hr>
+            <div id="quizContent">
+                <div id="quizQuestion">Carregando pergunta...</div>
+                <div id="quizImageContainer"></div>
+                <div id="quizOptions"></div>
+                <div id="quizFeedback"></div>
+                <div id="quizActions">
+                     <button id="confirmAnswerBtn" disabled>Confirmar Resposta</button>
+                    <button id="nextQuestionBtn">Próxima Pergunta</button>
+                </div>
+            </div>
+            <div id="quizResults" style="display: none;">
+                <h3>Quiz Finalizado!</h3>
+                <p>Sua pontuação final: <span id="finalScore"></span></p>
+                <button id="restartQuizBtn" style="background-color: #4CAF50;">Jogar Novamente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal do Jogo da Memória -->
+    <div id="memoryGameModal">
+        <div class="memory-game-container">
+            <button id="closeMemoryGameBtn">×</button>
+            <button id="toggleMaximizeMemoryBtn" title="Maximizar/Restaurar">□</button> <!-- Maximize Button -->
+            <div id="memoryGameHeader">
+                 <h2>Jogo da Memória</h2>
+                 <div id="memoryGameStatus">Pares Encontrados: 0 / 0</div>
+            </div>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 15px 0;">
+
+            <!-- Setup View -->
+            <div id="memoryGameSetup">
+                 <label for="memoryPairsSelect">Escolha o número de pares (5-17):</label>
+                 <select id="memoryPairsSelect"></select>
+                 <button id="confirmMemorySetupBtn">Iniciar Jogo</button>
+            </div>
+
+            <!-- Game Board Area -->
+            <div id="memoryGameArea" style="display: none;">
+                 <!-- Memory cards will be generated here by JS -->
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Dados das Cartas (Unchanged) ---
+        const cardsData = [
+            { id: 'PC6', name: 'Neiguan (PC6)', frontImage: 'https://i.ibb.co/VKF0Q1f/PC6.jpg', backImage: 'https://i.ibb.co/LDZbkt48/VERSO-PC6.jpg' },
+            { id: 'LI4', name: 'Hegu (LI4)', frontImage: 'https://i.ibb.co/qQKJVq8/LI4.jpg', backImage: 'https://i.ibb.co/mr00mh2N/VERSO-LI4.jpg' },
+            { id: 'ST36', name: 'Zusanli (ST36)', frontImage: 'https://i.ibb.co/pjnHJ5n7/ST36.jpg', backImage: 'https://i.ibb.co/cSqPfVL3/VERSO-ST36.jpg' },
+            { id: 'SP6', name: 'Sanyinjiao (SP6)', frontImage: 'https://i.ibb.co/kVyg8Psq/SP6.jpg', backImage: 'https://i.ibb.co/XhKTmVb/VERSO-SP6.jpg' },
+            { id: 'LR3', name: 'Taichong (LR3)', frontImage: 'https://i.ibb.co/mV997hT3/LR3.jpg', backImage: 'https://i.ibb.co/23FkdNVG/VERSO-LR3.jpg' },
+            { id: 'GB20', name: 'Fengchi (GB20)', frontImage: 'https://i.ibb.co/ycmfPjfn/GB20.jpg', backImage: 'https://i.ibb.co/84BB1ccc/VERSO-GB20.jpg' },
+            { id: 'HT7', name: 'Shenmen (HT7)', frontImage: 'https://i.ibb.co/bjGBv5DV/HT7.jpg', backImage: 'https://i.ibb.co/NgFP41Xd/VERSO-HT7.jpg' },
+            { id: 'LU7', name: 'Lieque (LU7)', frontImage: 'https://i.ibb.co/gZ9Xn8fM/LU7.jpg', backImage: 'https://i.ibb.co/N6pG8vgg/VERSO-LU7.jpg' },
+            { id: 'KI3', name: 'Taixi (KI3)', frontImage: 'https://i.ibb.co/PsfGzc0h/KI3.jpg', backImage: 'https://i.ibb.co/SDQznJTr/VERSO-KI3.jpg' },
+            { id: 'BL60', name: 'Kunlun (BL60)', frontImage: 'https://i.ibb.co/r2GsQ3r9/BL60.jpg', backImage: 'https://i.ibb.co/xtjFvS4L/VERSO-BL60.jpg' },
+            { id: 'Yintang', name: 'Yintang (Extra)', frontImage: 'https://i.ibb.co/5Xw6c4Wd/ex-hn3.jpg', backImage: 'https://i.ibb.co/0VhcxKzv/verso-ex-hn3.jpg' },
+            { id: 'GV20', name: 'Baihui (GV20)', frontImage: 'https://i.ibb.co/LXVGFwtw/GV20.jpg', backImage: 'https://i.ibb.co/1Jwq2tVX/VERSO-GV20.jpg' },
+            { id: 'LI11', name: 'Quchi (LI11)', frontImage: 'https://i.ibb.co/sp4Y6SyM/LI11.jpg', backImage: 'https://i.ibb.co/b5QSxSbb/VERSO-LI11.jpg' },
+            { id: 'ST25', name: 'Tianshu (ST25)', frontImage: 'https://i.ibb.co/21ygSmHX/ST25.jpg', backImage: 'https://i.ibb.co/mrSjrMLG/VERSO-ST25.jpg' },
+            { id: 'BL23', name: 'Shenshu (BL23)', frontImage: 'https://i.ibb.co/d461jvtt/BL23.jpg', backImage: 'https://i.ibb.co/JRkrbKw9/VERSO-BL23.jpg' },
+            { id: 'GB34', name: 'Yanglingquan (GB34)', frontImage: 'https://i.ibb.co/pBY0PQTK/GB34.jpg', backImage: 'https://i.ibb.co/SwkWt7wg/VERSO-GB34.jpg' },
+            { id: 'LI20', name: 'Yingxiang (LI20)', frontImage: 'https://i.ibb.co/FbMmQxjv/LI20.jpg', backImage: 'https://i.ibb.co/nsvtH81w/VERSO-LI-20.png' }
+        ];
+        const clinicalConditions = {
+            "Ansiedade": ['PC6', 'HT7', 'Yintang', 'LR3'], "Cefaleia do tipo tensão": ['GB20', 'LI4', 'LR3', 'Yintang'], "Cervicalgia": ['GB20', 'BL60', 'LI4'], "Constipação": ['ST25', 'SP6', 'ST36', 'LI4'], "Depressão": ['GV20', 'HT7', 'PC6', 'LR3', 'Yintang'], "Dor em ombro e cintura escapular": ['LI4', 'LI11', 'GB20'], "Insônia": ['HT7', 'SP6', 'KI3', 'Yintang', 'PC6'], "Lombalgia": ['BL23', 'BL60', 'GB34', 'KI3'], "Osteoartrite de joelho": ['ST36', 'SP6', 'GB34'], "Rinite alérgica": ['LI4', 'LI20', 'GB20', 'LU7']
+        };
+        const cardImageMap = new Map(cardsData.map(card => [card.name, card.frontImage]));
+        const PLACEHOLDER_IMAGE_URL = 'https://via.placeholder.com/80x80/eee/aaa?text=Img';
+        const COVER_IMAGE_URL = 'https://i.postimg.cc/W1DSkD2n/Chat-GPT-Image-10-04-2025-20-46-36.png';
+
+        // --- Referências do DOM ---
+        const randomCardBtn = document.getElementById('randomCardBtn');
+        const conditionSelect = document.getElementById('conditionSelect');
+        const cardDisplayArea = document.getElementById('cardDisplayArea');
+        const initialView = document.getElementById('initialView');
+        const resetBtn = document.getElementById('resetBtn');
+        const zoomOverlay = document.getElementById('zoomOverlay');
+        const startQuizBtn = document.getElementById('startQuizBtn');
+        const openMemoryGameBtn = document.getElementById('openMemoryGameBtn'); // Button to open memory modal
+
+        // Quiz DOM Refs
+        const quizModal = document.getElementById('quizModal');
+        const closeQuizBtn = document.getElementById('closeQuizBtn');
+        const quizContainer = quizModal.querySelector('.quiz-container');
+        const quizScoreEl = document.getElementById('quizScore');
+        const quizContentEl = document.getElementById('quizContent');
+        const quizQuestionEl = document.getElementById('quizQuestion');
+        const quizImageContainerEl = document.getElementById('quizImageContainer');
+        const quizOptionsEl = document.getElementById('quizOptions');
+        const quizFeedbackEl = document.getElementById('quizFeedback');
+        const confirmAnswerBtn = document.getElementById('confirmAnswerBtn');
+        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+        const quizResultsEl = document.getElementById('quizResults');
+        const finalScoreEl = document.getElementById('finalScore');
+        const restartQuizBtn = document.getElementById('restartQuizBtn');
+
+        // Memory Game DOM Refs
+        const memoryGameModal = document.getElementById('memoryGameModal');
+        const memoryGameContainer = memoryGameModal.querySelector('.memory-game-container');
+        const closeMemoryGameBtn = document.getElementById('closeMemoryGameBtn');
+        const toggleMaximizeMemoryBtn = document.getElementById('toggleMaximizeMemoryBtn');
+        const memoryGameStatusEl = document.getElementById('memoryGameStatus');
+        const memoryGameSetup = document.getElementById('memoryGameSetup');
+        const memoryPairsSelect = document.getElementById('memoryPairsSelect');
+        const confirmMemorySetupBtn = document.getElementById('confirmMemorySetupBtn');
+        const memoryGameArea = document.getElementById('memoryGameArea');
+
+
+        // --- Variáveis de Estado ---
+        let quizQuestions = []; let currentQuestionIndex = 0; let score = 0; let selectedAnswer = null; let quizActive = false; const TOTAL_QUIZ_QUESTIONS = 10; const QUESTIONS_PER_TYPE = 5;
+
+        // --- Variáveis de Estado do Jogo da Memória ---
+        let isMemoryGameActive = false;
+        let flippedMemoryCards = [];
+        let matchedPairs = 0;
+        let totalMemoryPairs = 0; // Will be set by user selection
+        let lockBoard = false;
+
+        // --- Funções Principais (Standard Card Display) ---
+        function populateConditions() { conditionSelect.innerHTML = '<option value="">-- Selecione --</option>'; for (const condition in clinicalConditions) { const option = document.createElement('option'); option.value = condition; option.textContent = condition; conditionSelect.appendChild(option); } }
+        function createCardElement(cardData) { /* ... (unchanged from previous version) ... */
+             const scene = document.createElement('div'); scene.className = 'scene'; scene.dataset.cardId = cardData.id;
+            const card = document.createElement('div'); card.className = 'card';
+            card.addEventListener('click', (event) => {
+                if (!scene.closest('#zoomOverlay') && !event.target.classList.contains('zoom-icon')) {
+                    card.classList.toggle('is-flipped');
+                }
+            });
+            const faceFront = document.createElement('div'); faceFront.className = 'face front';
+            const imgFront = document.createElement('img'); imgFront.src = cardData.frontImage; imgFront.alt = `Frente: ${cardData.name}`; imgFront.onerror = () => { imgFront.src = PLACEHOLDER_IMAGE_URL; imgFront.alt = 'Erro ao carregar imagem frontal'; };
+            const nameFront = document.createElement('div'); nameFront.className = 'card-name'; nameFront.textContent = cardData.name;
+            const zoomIcon = document.createElement('span'); zoomIcon.className = 'zoom-icon'; zoomIcon.textContent = '🔍'; zoomIcon.title = 'Ampliar/Reduzir';
+            zoomIcon.addEventListener('click', (event) => { event.stopPropagation(); toggleZoom(scene); });
+            faceFront.appendChild(imgFront); faceFront.appendChild(nameFront); faceFront.appendChild(zoomIcon);
+
+            const faceBack = document.createElement('div'); faceBack.className = 'face back';
+            const imgBack = document.createElement('img'); imgBack.src = cardData.backImage; imgBack.alt = `Verso: ${cardData.name}`; imgBack.onerror = () => { imgBack.src = PLACEHOLDER_IMAGE_URL; imgBack.alt = 'Erro ao carregar imagem do verso'; };
+            faceBack.appendChild(imgBack);
+
+            card.appendChild(faceFront); card.appendChild(faceBack);
+            scene.appendChild(card);
+            return scene;
+        }
+        function displayCards(cardIds) {
+            // Close any active overlays/modals first
+            if (isMemoryGameActive) closeMemoryGame();
+            if (quizActive) closeQuiz();
+            if (zoomOverlay.classList.contains('visible')) toggleZoom(null);
+
+            initialView.style.display = 'none';
+            cardDisplayArea.innerHTML = '';
+            cardDisplayArea.style.display = 'flex'; // Ensure flex display for standard cards
+
+            cardIds.forEach(id => {
+                const cardData = cardsData.find(card => card.id === id);
+                if (cardData) {
+                    const cardElement = createCardElement(cardData);
+                    cardDisplayArea.appendChild(cardElement);
+                } else {
+                    console.warn(`Dados da carta não encontrados para ID: ${id}`);
+                }
+            });
+        }
+        function toggleZoom(sceneElement) { /* ... (unchanged from previous version, maybe add checks for active modals) ... */
+             if (isMemoryGameActive || quizActive) return; // Disable zoom if modals are open
+
+            if (zoomOverlay.classList.contains('visible')) {
+                zoomOverlay.classList.remove('visible');
+                document.body.classList.remove('zoomed');
+                setTimeout(() => { zoomOverlay.innerHTML = ''; }, 300);
+            } else if (sceneElement) {
+                zoomOverlay.innerHTML = '';
+                const clonedScene = sceneElement.cloneNode(true);
+                const clonedCard = clonedScene.querySelector('.card');
+                const clonedZoomIcon = clonedScene.querySelector('.zoom-icon');
+
+                if (clonedZoomIcon) {
+                    clonedZoomIcon.textContent = '✖️';
+                    clonedZoomIcon.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        toggleZoom(null);
+                    });
+                }
+                if (clonedCard) {
+                    clonedCard.style.cursor = 'pointer'; // Allow flipping in zoom
+                    clonedCard.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        if (!event.target.classList.contains('zoom-icon')) { // Prevent flip on icon click
+                           clonedCard.classList.toggle('is-flipped');
+                        }
+                    });
+                }
+
+                zoomOverlay.appendChild(clonedScene);
+                document.body.classList.add('zoomed');
+                void zoomOverlay.offsetWidth; // Trigger reflow
+                zoomOverlay.classList.add('visible');
+            }
+        }
+        function drawRandomCard() { displayCards([cardsData[Math.floor(Math.random() * cardsData.length)].id]); conditionSelect.value = ""; }
+        function showConditionCards() { const selectedCondition = conditionSelect.value; if (selectedCondition && clinicalConditions[selectedCondition]) { const cardIds = clinicalConditions[selectedCondition]; displayCards(cardIds); } }
+        function resetView() {
+            if (isMemoryGameActive) closeMemoryGame();
+            if (quizActive) closeQuiz();
+            if (zoomOverlay.classList.contains('visible')) toggleZoom(null);
+
+            cardDisplayArea.innerHTML = '';
+            cardDisplayArea.style.display = 'none';
+            initialView.style.display = 'flex';
+            conditionSelect.value = "";
+            // Ensure body classes are removed
+            document.body.classList.remove('memory-game-active', 'quiz-active', 'zoomed');
+        }
+        function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
+
+        // --- Funções do Quiz (Unchanged) ---
+        function generateQuizQuestions() { /* ... (unchanged) ... */
+            let generatedQuestions = []; const shuffledCards = shuffleArray([...cardsData]); const allCardNames = cardsData.map(card => card.name); const conditionNames = Object.keys(clinicalConditions);
+            let imageQCount = 0; for (let i = 0; i < shuffledCards.length && imageQCount < QUESTIONS_PER_TYPE; i++) { const correctCard = shuffledCards[i]; const correctAnswerName = correctCard.name; const incorrectNames = allCardNames.filter(name => name !== correctAnswerName); shuffleArray(incorrectNames); const optionsAsStrings = [correctAnswerName, ...incorrectNames.slice(0, 3)]; if (optionsAsStrings.length < 4) continue; generatedQuestions.push({ question: "Qual o nome deste ponto?", image: correctCard.frontImage, options: shuffleArray(optionsAsStrings), correctAnswer: correctAnswerName }); imageQCount++; }
+            let conditionQCount = 0; const shuffledConditions = shuffleArray([...conditionNames]); for (let i = 0; i < shuffledConditions.length && conditionQCount < QUESTIONS_PER_TYPE; i++) { const conditionName = shuffledConditions[i]; const possibleCorrectPointIds = clinicalConditions[conditionName]; if (!possibleCorrectPointIds || possibleCorrectPointIds.length === 0) continue; const correctPointId = possibleCorrectPointIds[Math.floor(Math.random() * possibleCorrectPointIds.length)]; const correctPointData = cardsData.find(card => card.id === correctPointId); if (!correctPointData) continue; const correctAnswerName = correctPointData.name; const correctOption = { name: correctAnswerName, image: correctPointData.frontImage }; const conditionPointNames = possibleCorrectPointIds.map(id => cardsData.find(card => card.id === id)?.name).filter(name => name); const incorrectNames = allCardNames.filter(name => !conditionPointNames.includes(name)); shuffleArray(incorrectNames); const incorrectOptions = incorrectNames.slice(0, 3).map(name => ({ name: name, image: cardImageMap.get(name) || PLACEHOLDER_IMAGE_URL })); if (incorrectOptions.length < 3) continue; const optionsAsObjects = shuffleArray([correctOption, ...incorrectOptions]); generatedQuestions.push({ question: `Qual destes pontos é indicado para ${conditionName}?`, image: null, options: optionsAsObjects, correctAnswer: correctAnswerName }); conditionQCount++; }
+            while (generatedQuestions.length > 0 && generatedQuestions.length < TOTAL_QUIZ_QUESTIONS) { generatedQuestions.push({...generatedQuestions[Math.floor(Math.random() * generatedQuestions.length)]}); }
+            quizQuestions = shuffleArray(generatedQuestions.slice(0, TOTAL_QUIZ_QUESTIONS));
+        }
+        function startQuiz() {
+             if (isMemoryGameActive) closeMemoryGame(); // Close memory game if open
+             if (zoomOverlay.classList.contains('visible')) toggleZoom(null);
+             quizActive = true;
+             document.body.classList.add('quiz-active');
+             initialView.style.display = 'none';
+             cardDisplayArea.style.display = 'none';
+             generateQuizQuestions();
+             currentQuestionIndex = 0; score = 0; selectedAnswer = null;
+             quizResultsEl.style.display = 'none';
+             quizContentEl.style.display = 'block';
+             quizModal.classList.add('visible');
+             showQuestion();
+        }
+        function showQuestion() { /* ... (unchanged) ... */
+             if (!quizQuestions || currentQuestionIndex >= quizQuestions.length) { showResults(); return; } const currentQ = quizQuestions[currentQuestionIndex]; quizQuestionEl.textContent = currentQ.question; quizImageContainerEl.innerHTML = ''; if (currentQ.image) { const img = document.createElement('img'); img.src = currentQ.image; img.alt = "Imagem do ponto"; img.onerror = () => { img.src = PLACEHOLDER_IMAGE_URL; img.alt = 'Erro ao carregar imagem'; }; quizImageContainerEl.appendChild(img); }
+            quizOptionsEl.innerHTML = ''; currentQ.options.forEach(optionData => { const button = document.createElement('button'); button.classList.add('quiz-option-btn'); if (typeof optionData === 'string') { button.classList.add('no-image'); const text = document.createElement('span'); text.textContent = optionData; button.appendChild(text); button.dataset.optionValue = optionData; button.addEventListener('click', () => handleOptionSelect(button, optionData)); } else if (typeof optionData === 'object' && optionData !== null) { button.classList.add('has-image'); button.dataset.optionValue = optionData.name; const img = document.createElement('img'); img.src = optionData.image || PLACEHOLDER_IMAGE_URL; img.alt = optionData.name; img.onerror = () => { img.src = PLACEHOLDER_IMAGE_URL; img.alt = 'Erro img'; }; button.appendChild(img); const text = document.createElement('span'); text.textContent = optionData.name; button.appendChild(text); button.addEventListener('click', () => handleOptionSelect(button, optionData.name)); } quizOptionsEl.appendChild(button); });
+            quizFeedbackEl.textContent = ''; quizFeedbackEl.className = 'quiz-feedback'; confirmAnswerBtn.disabled = true; nextQuestionBtn.style.display = 'none'; confirmAnswerBtn.style.display = 'inline-block'; updateScoreDisplay(); selectedAnswer = null;
+        }
+        function handleOptionSelect(button, optionName) { /* ... (unchanged) ... */ if (!quizActive) return; const allOptions = quizOptionsEl.querySelectorAll('.quiz-option-btn'); allOptions.forEach(btn => btn.classList.remove('selected')); button.classList.add('selected'); selectedAnswer = optionName; confirmAnswerBtn.disabled = false; }
+        function checkAnswer() { /* ... (unchanged) ... */ if (!quizActive || selectedAnswer === null) return; const currentQ = quizQuestions[currentQuestionIndex]; const isCorrect = selectedAnswer === currentQ.correctAnswer; quizFeedbackEl.textContent = isCorrect ? 'Correto!' : `Incorreto! A resposta era: ${currentQ.correctAnswer}`; quizFeedbackEl.classList.add(isCorrect ? 'correct' : 'incorrect'); if (isCorrect) { score++; } const allOptions = quizOptionsEl.querySelectorAll('.quiz-option-btn'); allOptions.forEach(btn => { btn.disabled = true; const btnOptionValue = btn.dataset.optionValue; if (btnOptionValue === currentQ.correctAnswer) { btn.classList.add('correct'); } else if (btn.classList.contains('selected')) { btn.classList.add('incorrect'); } }); updateScoreDisplay(); confirmAnswerBtn.style.display = 'none'; nextQuestionBtn.style.display = 'inline-block'; }
+        function nextQuestion() { /* ... (unchanged) ... */ if (!quizActive) return; currentQuestionIndex++; showQuestion(); }
+        function updateScoreDisplay() { /* ... (unchanged) ... */ if (!quizActive) return; quizScoreEl.textContent = `Pontuação: ${score} / ${quizQuestions.length || TOTAL_QUIZ_QUESTIONS}`; }
+        function showResults() { /* ... (unchanged) ... */ if (!quizActive) return; quizContentEl.style.display = 'none'; finalScoreEl.textContent = `${score} de ${quizQuestions.length}`; quizResultsEl.style.display = 'block'; }
+        function closeQuiz() { quizModal.classList.remove('visible'); document.body.classList.remove('quiz-active'); quizActive = false; }
+
+        // --- Funções do Jogo da Memória ---
+
+        // Opens the modal and shows the setup screen
+        function openMemoryGameSetup() {
+            if (quizActive) closeQuiz();
+            if (zoomOverlay.classList.contains('visible')) toggleZoom(null);
+
+            isMemoryGameActive = true; // Set flag early
+            document.body.classList.add('memory-game-active');
+            initialView.style.display = 'none'; // Hide other views
+            cardDisplayArea.style.display = 'none';
+
+            // Populate selector
+            memoryPairsSelect.innerHTML = '';
+            for (let i = 5; i <= cardsData.length; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                memoryPairsSelect.appendChild(option);
+            }
+            memoryPairsSelect.value = cardsData.length; // Default to max
+
+            // Reset modal state
+            memoryGameContainer.classList.remove('maximized');
+            toggleMaximizeMemoryBtn.textContent = '□'; // Reset maximize icon
+            memoryGameSetup.style.display = 'flex'; // Show setup
+            memoryGameArea.style.display = 'none'; // Hide game board
+            memoryGameArea.innerHTML = ''; // Clear previous game board
+            memoryGameStatusEl.textContent = 'Pares Encontrados: 0 / 0';
+
+            // Show modal
+            memoryGameModal.classList.add('visible');
+        }
+
+        // Initializes and displays the memory game board after setup
+        function initMemoryGameBoard() {
+            const numPairs = parseInt(memoryPairsSelect.value, 10);
+            if (isNaN(numPairs) || numPairs < 5 || numPairs > cardsData.length) {
+                alert("Número de pares inválido.");
+                return;
+            }
+
+            totalMemoryPairs = numPairs; // Set the total for the current game
+            lockBoard = false;
+            flippedMemoryCards = [];
+            matchedPairs = 0;
+
+            memoryGameSetup.style.display = 'none'; // Hide setup
+            memoryGameArea.innerHTML = ''; // Clear area
+            memoryGameArea.style.display = 'grid'; // Show game board
+
+            memoryGameStatusEl.textContent = `Pares Encontrados: 0 / ${totalMemoryPairs}`;
+
+            // Create paired data using the selected number of points
+            let selectedCardsData = shuffleArray([...cardsData]).slice(0, totalMemoryPairs);
+            let memoryGameData = [];
+            selectedCardsData.forEach(card => {
+                memoryGameData.push({ id: card.id, type: 'front', image: card.frontImage });
+                memoryGameData.push({ id: card.id, type: 'back', image: card.backImage });
+            });
+
+            // Shuffle the cards (fronts and backs together)
+            const shuffledMemoryData = shuffleArray(memoryGameData);
+
+            // Create and append card elements
+            shuffledMemoryData.forEach(cardInfo => {
+                const memoryCardElement = createMemoryCardElement(cardInfo);
+                memoryGameArea.appendChild(memoryCardElement);
+            });
+        }
+
+        function createMemoryCardElement(cardInfo) {
+            const scene = document.createElement('div');
+            scene.className = 'memory-scene';
+
+            const card = document.createElement('div');
+            card.className = 'memory-card';
+            card.dataset.pointId = cardInfo.id;
+            card.dataset.cardType = cardInfo.type;
+
+            const faceFront = document.createElement('div');
+            faceFront.className = 'memory-face memory-front';
+
+            const faceBack = document.createElement('div');
+            faceBack.className = 'memory-face memory-back';
+            const imgBack = document.createElement('img');
+            imgBack.src = cardInfo.image;
+            imgBack.alt = `Carta ${cardInfo.id} (${cardInfo.type})`;
+            imgBack.onerror = () => { imgBack.src = PLACEHOLDER_IMAGE_URL; imgBack.alt = 'Erro imagem'; };
+            faceBack.appendChild(imgBack);
+
+            card.appendChild(faceFront);
+            card.appendChild(faceBack);
+            scene.appendChild(card);
+
+            card.addEventListener('click', handleMemoryCardClick);
+            return scene;
+        }
+
+        function handleMemoryCardClick(event) {
+            if (!isMemoryGameActive || lockBoard) return;
+            const clickedCard = event.currentTarget;
+            if (clickedCard.classList.contains('is-flipped') || clickedCard.classList.contains('matched')) return;
+
+            clickedCard.classList.add('is-flipped');
+            flippedMemoryCards.push(clickedCard);
+
+            if (flippedMemoryCards.length === 2) {
+                lockBoard = true;
+                checkForMatch();
+            }
+        }
+
+        function checkForMatch() {
+            const [card1, card2] = flippedMemoryCards;
+            const isMatch = (card1.dataset.pointId === card2.dataset.pointId) && (card1.dataset.cardType !== card2.dataset.cardType);
+
+            if (isMatch) {
+                disableCards();
+            } else {
+                setTimeout(unflipCards, 1000);
+            }
+        }
+
+        function disableCards() {
+            matchedPairs++;
+            memoryGameStatusEl.textContent = `Pares Encontrados: ${matchedPairs} / ${totalMemoryPairs}`;
+
+            flippedMemoryCards.forEach(card => {
+                card.classList.add('matched');
+                card.removeEventListener('click', handleMemoryCardClick);
+            });
+
+            flippedMemoryCards = [];
+            lockBoard = false;
+
+            if (matchedPairs === totalMemoryPairs) {
+                 memoryGameStatusEl.textContent += ' - Jogo Completo!';
+                 setTimeout(() => {
+                     alert('Parabéns! Você encontrou todos os pares!');
+                 }, 500);
+            }
+        }
+
+        function unflipCards() {
+            flippedMemoryCards.forEach(card => {
+                card.classList.remove('is-flipped');
+            });
+            flippedMemoryCards = [];
+            lockBoard = false;
+        }
+
+        function closeMemoryGame() {
+            memoryGameModal.classList.remove('visible');
+            document.body.classList.remove('memory-game-active');
+            isMemoryGameActive = false;
+            // Optionally reset the game state completely if needed
+            // matchedPairs = 0;
+            // totalMemoryPairs = 0;
+            // memoryGameArea.innerHTML = '';
+        }
+
+        function toggleMaximizeMemoryGame() {
+            memoryGameContainer.classList.toggle('maximized');
+            if (memoryGameContainer.classList.contains('maximized')) {
+                toggleMaximizeMemoryBtn.textContent = '❐'; // Restore icon
+                toggleMaximizeMemoryBtn.title = 'Restaurar Tamanho';
+            } else {
+                toggleMaximizeMemoryBtn.textContent = '□'; // Maximize icon
+                toggleMaximizeMemoryBtn.title = 'Maximizar';
+            }
+        }
+
+        // --- Inicialização e Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+             populateConditions();
+             resetView();
+
+             // Main Controls
+             randomCardBtn.addEventListener('click', drawRandomCard);
+             conditionSelect.addEventListener('change', showConditionCards);
+             resetBtn.addEventListener('click', resetView);
+             startQuizBtn.addEventListener('click', startQuiz);
+             openMemoryGameBtn.addEventListener('click', openMemoryGameSetup); // Opens memory modal setup
+
+             // Zoom Overlay
+             zoomOverlay.addEventListener('click', (event) => { if (event.target === zoomOverlay) toggleZoom(null); });
+
+             // Quiz Listeners
+             closeQuizBtn.addEventListener('click', closeQuiz);
+             confirmAnswerBtn.addEventListener('click', checkAnswer);
+             nextQuestionBtn.addEventListener('click', nextQuestion);
+             restartQuizBtn.addEventListener('click', startQuiz);
+             quizModal.addEventListener('click', (event) => { if (event.target === quizModal) closeQuiz(); });
+             quizContainer.addEventListener('click', (event) => { event.stopPropagation(); });
+
+             // Memory Game Listeners
+             closeMemoryGameBtn.addEventListener('click', closeMemoryGame);
+             toggleMaximizeMemoryBtn.addEventListener('click', toggleMaximizeMemoryGame);
+             confirmMemorySetupBtn.addEventListener('click', initMemoryGameBoard); // Starts the actual game
+             memoryGameModal.addEventListener('click', (event) => { if (event.target === memoryGameModal) closeMemoryGame(); });
+             memoryGameContainer.addEventListener('click', (event) => { event.stopPropagation(); }); // Prevent closing by clicking inside
+        });
+    </script>
+
+</body>
+</html>
