@@ -49,7 +49,7 @@
         #zoomOverlay.visible .scene { transform: scale(1); }
         #zoomOverlay .zoom-icon { font-size: 2em; top: 15px; right: 15px; }
 
-        /* --- Estilos do Modal do Quiz --- */
+        /* --- Estilos do Modal do Quiz (Unchanged) --- */
         #quizModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 1100; opacity: 0; transition: opacity 0.4s ease-in-out; padding: 20px; box-sizing: border-box; }
         #quizModal.visible { display: flex; opacity: 1; }
         .quiz-container { background-color: #fff; padding: 25px 30px; border-radius: 15px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; text-align: center; }
@@ -88,25 +88,35 @@
         .memory-game-container.maximized { width: 95vw; height: 95vh; max-width: none; max-height: none; } /* Maximized styles */
         #closeMemoryGameBtn { position: absolute; top: 10px; right: 15px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; font-weight: bold; line-height: 28px; cursor: pointer; text-align: center; z-index: 3; }
         #toggleMaximizeMemoryBtn { position: absolute; top: 10px; right: 55px; background: #ccc; color: #333; border: none; border-radius: 5px; width: 30px; height: 30px; font-size: 16px; font-weight: bold; line-height: 28px; cursor: pointer; text-align: center; z-index: 3; }
-        #memoryGameHeader { text-align: center; margin-bottom: 15px; padding-right: 80px; /* Space for buttons */ }
-        #memoryGameHeader h2 { margin: 0 0 10px 0; color: #ff9800; }
-        #memoryGameStatus { font-size: 1.1em; font-weight: bold; color: #555; }
-        #memoryGameSetup { text-align: center; padding: 30px 0; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-        #memoryGameSetup label { font-size: 1.1em; font-weight: 500; }
-        #memoryPairsSelect { padding: 8px 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1em; min-width: 80px; }
+        #memoryGameHeader { text-align: center; margin-bottom: 5px; /* Reduced margin */ padding-right: 80px; /* Space for buttons */ }
+        #memoryGameHeader h2 { margin: 0 0 5px 0; color: #ff9800; }
+        #memoryGameInfo { display: flex; justify-content: space-around; align-items: center; font-size: 1.1em; font-weight: bold; color: #555; margin-bottom: 10px; min-height: 25px; } /* Container for status and timer */
+        #memoryGameStatus {} /* Styles for status */
+        #memoryTimerDisplay { color: #dc3545; } /* Styles for timer */
+
+        #memoryGameSetup { text-align: center; padding: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        #memoryGameSetup label { font-size: 1.1em; font-weight: 500; margin-bottom: 5px; }
+        #memoryPairsSelect { padding: 8px 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1em; min-width: 80px; margin-bottom: 10px; }
+        .timer-options { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; justify-content: center; }
+        .timer-options label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .timer-options input[type="radio"] { margin: 0; }
         #confirmMemorySetupBtn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; }
-        #memoryGameArea { flex-grow: 1; /* Takes remaining space */ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Adjust minmax for card size */ gap: 10px; padding: 10px; overflow-y: auto; /* Allow scrolling if needed */ }
+
+        #memoryGameArea { flex-grow: 1; /* Takes remaining space */ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Adjust minmax for card size */ gap: 10px; padding: 10px; overflow-y: auto; /* Allow scrolling if needed */ justify-items: center; /* Center items within grid cells */ }
         .memory-game-container.maximized #memoryGameArea { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; } /* Slightly larger cards when maximized */
 
         /* Card styles within the modal grid */
-        .memory-scene { width: 100%; /* Take grid cell width */ aspect-ratio: 2 / 3; /* Maintain approx card ratio */ perspective: 600px; position: relative; }
+        .memory-scene { width: 100%; /* Take grid cell width */ aspect-ratio: 2 / 3; /* Maintain approx card ratio */ perspective: 600px; position: relative; transition: opacity 0.5s ease-out, transform 0.3s ease-out; /* Added transition for removal */ }
+        .memory-scene.matched-fade-out { opacity: 0; transform: scale(0.9); /* Slight shrink effect */ pointer-events: none; /* Prevent interaction during fade */ } /* Style for fading out */
+
         .memory-card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1); border-radius: 8px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; border: 2px solid white; }
         .memory-card.is-flipped { transform: rotateY(180deg); }
         .memory-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
         .memory-front { background: url('https://i.postimg.cc/W1DSkD2n/Chat-GPT-Image-10-04-2025-20-46-36.png') center center / cover no-repeat; background-color: #eee; }
         .memory-back { transform: rotateY(180deg); background: #ffffff; padding: 3px; box-sizing: border-box; }
         .memory-back img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
-        .memory-card.matched { transform: rotateY(180deg) scale(0.95); opacity: 0.6; cursor: default; box-shadow: 0 0 8px 2px #4CAF50; }
+        /* Remove the specific .matched styles as cards will disappear */
+        /* .memory-card.matched { transform: rotateY(180deg) scale(0.95); opacity: 0.6; cursor: default; box-shadow: 0 0 8px 2px #4CAF50; } */
 
     </style>
 </head>
@@ -156,7 +166,10 @@
             <button id="toggleMaximizeMemoryBtn" title="Maximizar/Restaurar">□</button> <!-- Maximize Button -->
             <div id="memoryGameHeader">
                  <h2>Jogo da Memória</h2>
-                 <div id="memoryGameStatus">Pares Encontrados: 0 / 0</div>
+                 <div id="memoryGameInfo"> <!-- Combined status and timer -->
+                    <div id="memoryGameStatus">Pares Encontrados: 0 / 0</div>
+                    <div id="memoryTimerDisplay"></div> <!-- Timer display -->
+                 </div>
             </div>
             <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 15px 0;">
 
@@ -164,6 +177,15 @@
             <div id="memoryGameSetup">
                  <label for="memoryPairsSelect">Escolha o número de pares (5-17):</label>
                  <select id="memoryPairsSelect"></select>
+
+                 <label>Tempo Limite:</label> <!-- Timer options -->
+                 <div class="timer-options">
+                     <label><input type="radio" name="memoryTimer" value="0" checked> Sem Tempo</label>
+                     <label><input type="radio" name="memoryTimer" value="120"> 2 min</label>
+                     <label><input type="radio" name="memoryTimer" value="300"> 5 min</label>
+                     <label><input type="radio" name="memoryTimer" value="600"> 10 min</label>
+                 </div>
+
                  <button id="confirmMemorySetupBtn">Iniciar Jogo</button>
             </div>
 
@@ -211,9 +233,9 @@
         const resetBtn = document.getElementById('resetBtn');
         const zoomOverlay = document.getElementById('zoomOverlay');
         const startQuizBtn = document.getElementById('startQuizBtn');
-        const openMemoryGameBtn = document.getElementById('openMemoryGameBtn'); // Button to open memory modal
+        const openMemoryGameBtn = document.getElementById('openMemoryGameBtn');
 
-        // Quiz DOM Refs
+        // Quiz DOM Refs (Unchanged)
         const quizModal = document.getElementById('quizModal');
         const closeQuizBtn = document.getElementById('closeQuizBtn');
         const quizContainer = quizModal.querySelector('.quiz-container');
@@ -235,10 +257,12 @@
         const closeMemoryGameBtn = document.getElementById('closeMemoryGameBtn');
         const toggleMaximizeMemoryBtn = document.getElementById('toggleMaximizeMemoryBtn');
         const memoryGameStatusEl = document.getElementById('memoryGameStatus');
+        const memoryTimerDisplayEl = document.getElementById('memoryTimerDisplay'); // Timer Display Element
         const memoryGameSetup = document.getElementById('memoryGameSetup');
         const memoryPairsSelect = document.getElementById('memoryPairsSelect');
         const confirmMemorySetupBtn = document.getElementById('confirmMemorySetupBtn');
         const memoryGameArea = document.getElementById('memoryGameArea');
+        const timerOptionsInputs = document.querySelectorAll('input[name="memoryTimer"]'); // Timer Radio Inputs
 
 
         // --- Variáveis de Estado ---
@@ -248,12 +272,15 @@
         let isMemoryGameActive = false;
         let flippedMemoryCards = [];
         let matchedPairs = 0;
-        let totalMemoryPairs = 0; // Will be set by user selection
+        let totalMemoryPairs = 0;
         let lockBoard = false;
+        let memoryTimerInterval = null; // ID do intervalo do timer
+        let memoryTimeLeft = 0;         // Segundos restantes
+        let memorySelectedTime = 0;     // Tempo inicial selecionado em segundos
 
-        // --- Funções Principais (Standard Card Display) ---
+        // --- Funções Principais (Standard Card Display - Unchanged) ---
         function populateConditions() { conditionSelect.innerHTML = '<option value="">-- Selecione --</option>'; for (const condition in clinicalConditions) { const option = document.createElement('option'); option.value = condition; option.textContent = condition; conditionSelect.appendChild(option); } }
-        function createCardElement(cardData) { /* ... (unchanged from previous version) ... */
+        function createCardElement(cardData) { /* ... (unchanged) ... */
              const scene = document.createElement('div'); scene.className = 'scene'; scene.dataset.cardId = cardData.id;
             const card = document.createElement('div'); card.className = 'card';
             card.addEventListener('click', (event) => {
@@ -276,15 +303,14 @@
             scene.appendChild(card);
             return scene;
         }
-        function displayCards(cardIds) {
-            // Close any active overlays/modals first
+        function displayCards(cardIds) { /* ... (unchanged, closes modals) ... */
             if (isMemoryGameActive) closeMemoryGame();
             if (quizActive) closeQuiz();
             if (zoomOverlay.classList.contains('visible')) toggleZoom(null);
 
             initialView.style.display = 'none';
             cardDisplayArea.innerHTML = '';
-            cardDisplayArea.style.display = 'flex'; // Ensure flex display for standard cards
+            cardDisplayArea.style.display = 'flex';
 
             cardIds.forEach(id => {
                 const cardData = cardsData.find(card => card.id === id);
@@ -296,7 +322,7 @@
                 }
             });
         }
-        function toggleZoom(sceneElement) { /* ... (unchanged from previous version, maybe add checks for active modals) ... */
+         function toggleZoom(sceneElement) { /* ... (unchanged, checks modals) ... */
              if (isMemoryGameActive || quizActive) return; // Disable zoom if modals are open
 
             if (zoomOverlay.classList.contains('visible')) {
@@ -334,7 +360,7 @@
         }
         function drawRandomCard() { displayCards([cardsData[Math.floor(Math.random() * cardsData.length)].id]); conditionSelect.value = ""; }
         function showConditionCards() { const selectedCondition = conditionSelect.value; if (selectedCondition && clinicalConditions[selectedCondition]) { const cardIds = clinicalConditions[selectedCondition]; displayCards(cardIds); } }
-        function resetView() {
+        function resetView() { /* ... (unchanged, closes modals) ... */
             if (isMemoryGameActive) closeMemoryGame();
             if (quizActive) closeQuiz();
             if (zoomOverlay.classList.contains('visible')) toggleZoom(null);
@@ -343,7 +369,6 @@
             cardDisplayArea.style.display = 'none';
             initialView.style.display = 'flex';
             conditionSelect.value = "";
-            // Ensure body classes are removed
             document.body.classList.remove('memory-game-active', 'quiz-active', 'zoomed');
         }
         function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
@@ -356,8 +381,8 @@
             while (generatedQuestions.length > 0 && generatedQuestions.length < TOTAL_QUIZ_QUESTIONS) { generatedQuestions.push({...generatedQuestions[Math.floor(Math.random() * generatedQuestions.length)]}); }
             quizQuestions = shuffleArray(generatedQuestions.slice(0, TOTAL_QUIZ_QUESTIONS));
         }
-        function startQuiz() {
-             if (isMemoryGameActive) closeMemoryGame(); // Close memory game if open
+        function startQuiz() { /* ... (unchanged, closes modals) ... */
+             if (isMemoryGameActive) closeMemoryGame();
              if (zoomOverlay.classList.contains('visible')) toggleZoom(null);
              quizActive = true;
              document.body.classList.add('quiz-active');
@@ -402,15 +427,20 @@
                 option.textContent = i;
                 memoryPairsSelect.appendChild(option);
             }
-            memoryPairsSelect.value = cardsData.length; // Default to max
+            memoryPairsSelect.value = Math.min(10, cardsData.length); // Default to 10 or max available
+
+             // Reset timer selection
+            timerOptionsInputs.forEach((input, index) => input.checked = index === 0); // Check "Sem Tempo"
 
             // Reset modal state
             memoryGameContainer.classList.remove('maximized');
-            toggleMaximizeMemoryBtn.textContent = '□'; // Reset maximize icon
-            memoryGameSetup.style.display = 'flex'; // Show setup
-            memoryGameArea.style.display = 'none'; // Hide game board
-            memoryGameArea.innerHTML = ''; // Clear previous game board
+            toggleMaximizeMemoryBtn.textContent = '□';
+            memoryGameSetup.style.display = 'flex';
+            memoryGameArea.style.display = 'none';
+            memoryGameArea.innerHTML = '';
             memoryGameStatusEl.textContent = 'Pares Encontrados: 0 / 0';
+            memoryTimerDisplayEl.textContent = ''; // Clear timer display
+            stopMemoryTimer(); // Ensure any previous timer is stopped
 
             // Show modal
             memoryGameModal.classList.add('visible');
@@ -424,26 +454,30 @@
                 return;
             }
 
-            totalMemoryPairs = numPairs; // Set the total for the current game
+            // Get selected time
+            const selectedTimerInput = document.querySelector('input[name="memoryTimer"]:checked');
+            memorySelectedTime = parseInt(selectedTimerInput?.value || '0', 10); // Get time in seconds
+
+            totalMemoryPairs = numPairs;
             lockBoard = false;
             flippedMemoryCards = [];
             matchedPairs = 0;
+            memoryTimeLeft = memorySelectedTime; // Set initial time left
 
-            memoryGameSetup.style.display = 'none'; // Hide setup
-            memoryGameArea.innerHTML = ''; // Clear area
-            memoryGameArea.style.display = 'grid'; // Show game board
+            memoryGameSetup.style.display = 'none';
+            memoryGameArea.innerHTML = '';
+            memoryGameArea.style.display = 'grid';
 
-            memoryGameStatusEl.textContent = `Pares Encontrados: 0 / ${totalMemoryPairs}`;
+            updateMemoryStatus(); // Update status (pairs)
+            updateMemoryTimerDisplay(); // Show initial time (or nothing if 0)
 
-            // Create paired data using the selected number of points
+            // Create paired data
             let selectedCardsData = shuffleArray([...cardsData]).slice(0, totalMemoryPairs);
             let memoryGameData = [];
             selectedCardsData.forEach(card => {
                 memoryGameData.push({ id: card.id, type: 'front', image: card.frontImage });
                 memoryGameData.push({ id: card.id, type: 'back', image: card.backImage });
             });
-
-            // Shuffle the cards (fronts and backs together)
             const shuffledMemoryData = shuffleArray(memoryGameData);
 
             // Create and append card elements
@@ -451,11 +485,18 @@
                 const memoryCardElement = createMemoryCardElement(cardInfo);
                 memoryGameArea.appendChild(memoryCardElement);
             });
+
+            // Start timer only if a time was selected
+            if (memorySelectedTime > 0) {
+                startMemoryTimer();
+            }
         }
 
         function createMemoryCardElement(cardInfo) {
             const scene = document.createElement('div');
             scene.className = 'memory-scene';
+            // Store data on the scene as well for easier removal
+            scene.dataset.pointId = cardInfo.id;
 
             const card = document.createElement('div');
             card.className = 'memory-card';
@@ -477,20 +518,25 @@
             card.appendChild(faceBack);
             scene.appendChild(card);
 
+            // Add click listener to the card, not the scene
             card.addEventListener('click', handleMemoryCardClick);
             return scene;
         }
 
         function handleMemoryCardClick(event) {
             if (!isMemoryGameActive || lockBoard) return;
+            // Check if timer ran out (if applicable)
+            if (memorySelectedTime > 0 && memoryTimeLeft <= 0) return;
+
             const clickedCard = event.currentTarget;
-            if (clickedCard.classList.contains('is-flipped') || clickedCard.classList.contains('matched')) return;
+            // Prevent clicking already flipped or matched (disappearing) cards
+            if (clickedCard.classList.contains('is-flipped') || clickedCard.closest('.memory-scene')?.classList.contains('matched-fade-out')) return;
 
             clickedCard.classList.add('is-flipped');
             flippedMemoryCards.push(clickedCard);
 
             if (flippedMemoryCards.length === 2) {
-                lockBoard = true;
+                lockBoard = true; // Lock board while checking
                 checkForMatch();
             }
         }
@@ -500,60 +546,128 @@
             const isMatch = (card1.dataset.pointId === card2.dataset.pointId) && (card1.dataset.cardType !== card2.dataset.cardType);
 
             if (isMatch) {
-                disableCards();
+                // Found a match!
+                matchedPairs++;
+                updateMemoryStatus(); // Update status immediately
+
+                // Get parent scenes to remove them
+                const scene1 = card1.closest('.memory-scene');
+                const scene2 = card2.closest('.memory-scene');
+
+                // Add fading class and remove after timeout
+                scene1?.classList.add('matched-fade-out');
+                scene2?.classList.add('matched-fade-out');
+
+                setTimeout(() => {
+                    scene1?.remove();
+                    scene2?.remove();
+
+                    // Check for win condition *after* removal animation might finish visually
+                    if (matchedPairs === totalMemoryPairs) {
+                        winGame();
+                    } else {
+                         // Unlock board only after removal attempt if game not won
+                         lockBoard = false;
+                    }
+                }, 500); // Match CSS transition duration
+
+                flippedMemoryCards = []; // Reset flipped cards immediately
+                 // Don't unlock board yet, wait for timeout unless game is won
+
+
             } else {
+                // No match, unflip after a delay
                 setTimeout(unflipCards, 1000);
             }
         }
 
-        function disableCards() {
-            matchedPairs++;
-            memoryGameStatusEl.textContent = `Pares Encontrados: ${matchedPairs} / ${totalMemoryPairs}`;
-
-            flippedMemoryCards.forEach(card => {
-                card.classList.add('matched');
-                card.removeEventListener('click', handleMemoryCardClick);
-            });
-
-            flippedMemoryCards = [];
-            lockBoard = false;
-
-            if (matchedPairs === totalMemoryPairs) {
-                 memoryGameStatusEl.textContent += ' - Jogo Completo!';
-                 setTimeout(() => {
-                     alert('Parabéns! Você encontrou todos os pares!');
-                 }, 500);
-            }
-        }
+        // Renamed from disableCards - now just handles the visual removal part
+        // Logic moved into checkForMatch
 
         function unflipCards() {
             flippedMemoryCards.forEach(card => {
                 card.classList.remove('is-flipped');
             });
             flippedMemoryCards = [];
-            lockBoard = false;
+            lockBoard = false; // Unlock board after unflipping
         }
 
+         function winGame() {
+            stopMemoryTimer(); // Stop timer on win
+            updateMemoryStatus(); // Final status update
+            memoryGameStatusEl.textContent += ' - Jogo Completo!';
+            lockBoard = true; // Keep board locked after win
+            setTimeout(() => {
+                alert('Parabéns! Você encontrou todos os pares!');
+            }, 300); // Short delay after last cards fade
+         }
+
+         function timeUp() {
+             stopMemoryTimer();
+             lockBoard = true; // Lock board when time runs out
+             memoryTimerDisplayEl.textContent = "Tempo Esgotado!";
+             alert('Tempo esgotado! Tente novamente.');
+             // Optionally flip all remaining cards or highlight pairs
+         }
+
+
         function closeMemoryGame() {
+            stopMemoryTimer(); // Make sure timer stops when closing
             memoryGameModal.classList.remove('visible');
             document.body.classList.remove('memory-game-active');
             isMemoryGameActive = false;
-            // Optionally reset the game state completely if needed
-            // matchedPairs = 0;
-            // totalMemoryPairs = 0;
-            // memoryGameArea.innerHTML = '';
+            // Reset game state variables if desired (or keep them until next setup)
         }
 
         function toggleMaximizeMemoryGame() {
             memoryGameContainer.classList.toggle('maximized');
             if (memoryGameContainer.classList.contains('maximized')) {
-                toggleMaximizeMemoryBtn.textContent = '❐'; // Restore icon
+                toggleMaximizeMemoryBtn.textContent = '❐';
                 toggleMaximizeMemoryBtn.title = 'Restaurar Tamanho';
             } else {
-                toggleMaximizeMemoryBtn.textContent = '□'; // Maximize icon
+                toggleMaximizeMemoryBtn.textContent = '□';
                 toggleMaximizeMemoryBtn.title = 'Maximizar';
             }
         }
+
+        // --- Funções do Cronômetro ---
+        function startMemoryTimer() {
+            stopMemoryTimer(); // Clear any existing timer first
+            memoryTimeLeft = memorySelectedTime; // Reset to selected time
+            updateMemoryTimerDisplay(); // Show initial time
+
+            memoryTimerInterval = setInterval(() => {
+                memoryTimeLeft--;
+                updateMemoryTimerDisplay();
+
+                if (memoryTimeLeft <= 0) {
+                    timeUp(); // Call time up logic
+                }
+            }, 1000); // Update every second
+        }
+
+        function stopMemoryTimer() {
+            clearInterval(memoryTimerInterval);
+            memoryTimerInterval = null;
+        }
+
+        function updateMemoryTimerDisplay() {
+             if (memorySelectedTime <= 0) {
+                 memoryTimerDisplayEl.textContent = ''; // No timer display if none selected
+                 return;
+             }
+             if (memoryTimeLeft < 0) memoryTimeLeft = 0; // Prevent negative display
+
+            const minutes = Math.floor(memoryTimeLeft / 60);
+            const seconds = memoryTimeLeft % 60;
+            // Pad seconds with a leading zero if less than 10
+            memoryTimerDisplayEl.textContent = `Tempo: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function updateMemoryStatus() {
+             memoryGameStatusEl.textContent = `Pares Encontrados: ${matchedPairs} / ${totalMemoryPairs}`;
+        }
+
 
         // --- Inicialização e Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -565,12 +679,12 @@
              conditionSelect.addEventListener('change', showConditionCards);
              resetBtn.addEventListener('click', resetView);
              startQuizBtn.addEventListener('click', startQuiz);
-             openMemoryGameBtn.addEventListener('click', openMemoryGameSetup); // Opens memory modal setup
+             openMemoryGameBtn.addEventListener('click', openMemoryGameSetup);
 
              // Zoom Overlay
              zoomOverlay.addEventListener('click', (event) => { if (event.target === zoomOverlay) toggleZoom(null); });
 
-             // Quiz Listeners
+             // Quiz Listeners (Unchanged)
              closeQuizBtn.addEventListener('click', closeQuiz);
              confirmAnswerBtn.addEventListener('click', checkAnswer);
              nextQuestionBtn.addEventListener('click', nextQuestion);
